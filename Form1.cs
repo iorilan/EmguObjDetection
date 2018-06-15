@@ -26,7 +26,7 @@ namespace EmguObjDetect
         private bool _done = false;
         private Size _frameSize;
         Timer _timerDetect = new Timer();
-        private ObjTest _objTest;
+        
         private BackgroundWorker _bgWorker;
         private void RenderPolygon()
         {
@@ -69,6 +69,7 @@ namespace EmguObjDetect
             _timer_drawing.Start();
         }
 
+        private ObjTestHog _objTest;
         private void button1_Click(object sender, EventArgs e)
         {
             if (_points == null || _points.Count == 0)
@@ -81,7 +82,8 @@ namespace EmguObjDetect
 
             if (_objTest == null)
             {
-                _objTest = new ObjTest(_points.ToArray());
+                // _objTest = new ObjTest(_points.ToArray()); // using haarcascades
+                _objTest = new ObjTestHog(_points.ToArray());// using hog descripter
             }
             else
             {
