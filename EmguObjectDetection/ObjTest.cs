@@ -17,7 +17,7 @@ namespace EmguObjDetect
         {
             _points = points;
             _capture = new Capture();
-            _cascadeClassifier = new CascadeClassifier(Application.StartupPath + "/haarcascades/haarcascade_upperbody.xml");
+            _cascadeClassifier = new CascadeClassifier(Application.StartupPath + "../../../haarcascades/haarcascade_upperbody.xml");
         }
 
         public void ResetPoly(Point[] points)

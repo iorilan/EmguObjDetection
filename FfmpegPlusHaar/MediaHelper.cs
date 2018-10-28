@@ -1,43 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
-namespace FFmpegPhotoGenerator
+namespace VCAOpenCV
 {
-    public class MediaHelper
+   public class MediaHelper
     {
-        public static string FFmpegImgfolder()
-        {
-            var appPath = Application.StartupPath;
-            var ffImgsFolder = ConfigurationManager.AppSettings["ffmpegFolder"];
-            var ffPath = Path.Combine(appPath, ffImgsFolder);
-            return ffPath;
-        }
-
         public static string VcaImgfolder()
         {
-            var appPath = Application.StartupPath;
-            var vcaFolder = ConfigurationManager.AppSettings["vcaFolder"];
-            var vcaPath = Path.Combine(appPath, vcaFolder);
+            var vcaPath = ConfigurationManager.AppSettings["vcaFolder"];
 
             return vcaPath;
         }
-
-        public static string OutputImgfolder()
+        public static string outputfolder()
         {
-            var appPath = Application.StartupPath;
-            var resultFolder = ConfigurationManager.AppSettings["outputFolder"];
-            var outputPath = Path.Combine(appPath, resultFolder);
+            var vcaPath = ConfigurationManager.AppSettings["outputFolder"];
 
-            return outputPath;
+            return vcaPath;
         }
-
         public static string FileName(string path)
         {
             var fileName = path.Split('\\').Last();

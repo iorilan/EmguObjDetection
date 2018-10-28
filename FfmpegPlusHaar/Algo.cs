@@ -1,23 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
+﻿using System.Configuration;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+
 using Emgu.CV;
 using Emgu.CV.Cuda;
-using Emgu.CV.Cvb;
-using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
-using Emgu.TF;
-using Emgu.TF.Models;
 
-namespace FFmpegPhotoGenerator
+namespace VCAOpenCV
 {
     public interface IDetect
     {
@@ -47,7 +36,7 @@ namespace FFmpegPhotoGenerator
         }
     }
 
-    [Obsolete("Have bug")]
+    
     public class AlgoCudaHog : IDetect
     {
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
@@ -57,24 +46,52 @@ namespace FFmpegPhotoGenerator
                 des.SetSVMDetector(des.GetDefaultPeopleDetector());
 
                 using (GpuMat cudaBgra = new GpuMat())
-                using (VectorOfRect vr = new VectorOfRect())
                 {
-                    CudaInvoke.CvtColor(grayframe, cudaBgra, ColorConversion.Bgr2Bgra);
-                    des.DetectMultiScale(cudaBgra, vr);
-                    var regions = vr.ToArray();
+                    using (VectorOfRect vr = new VectorOfRect())
+                    {
+                        //CudaInvoke.CvtColor(grayframe, cudaBgra, ColorConversion.Bgr2Bgra);
+                        cudaBgra.Upload(grayframe);
+                        //CudaInvoke.CvtColor(grayframe, cudaBgra, ColorConversion.Gray2Bgra);
+                        des.DetectMultiScale(cudaBgra, vr);
+                        var regions = vr.ToArray();
 
-                    return regions;
+                        return regions;
+                    }
                 }
+               
+            }
+        }
+    }
+    public class AlgoCudaCascade : IDetect
+    {
+        public Rectangle[] Detect(Image<Gray, byte> grayframe)
+        {
+            using (CudaCascadeClassifier des = new CudaCascadeClassifier(ConfigurationManager.AppSettings["haarPath"]))
+            {
+                using (GpuMat cudaBgra = new GpuMat())
+                {
+                    using (VectorOfRect vr = new VectorOfRect())
+                    {
+                        //CudaInvoke.CvtColor(grayframe, cudaBgra, ColorConversion.Bgr2Bgra);
+                        cudaBgra.Upload(grayframe);
+                        //CudaInvoke.CvtColor(grayframe, cudaBgra, ColorConversion.Gray2Bgra);
+                        des.DetectMultiScale(cudaBgra, vr);
+                        var regions = vr.ToArray();
+
+                        return regions;
+                    }
+                }
+
             }
         }
     }
     public class AlgoHaar : IDetect
     {
-        private static CascadeClassifier _haarClassifier = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["haarPath"]);
+        private static CascadeClassifier _haarClassifier = new CascadeClassifier(ConfigurationManager.AppSettings["haarPath"]);
 
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
         {
-            var targets = _haarClassifier.DetectMultiScale(grayframe, 1.1, 10,
+            var targets = _haarClassifier.DetectMultiScale(grayframe, 1.1, 3,
                 Size.Empty);
             return targets;
         }
@@ -82,7 +99,7 @@ namespace FFmpegPhotoGenerator
 
     public class AlgoHaarFullBody : IDetect
     {
-        private static CascadeClassifier _haarClassifier = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["haarFullBody"]);
+        private static CascadeClassifier _haarClassifier = new CascadeClassifier(ConfigurationManager.AppSettings["haarFullBody"]);
 
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
         {
@@ -95,7 +112,7 @@ namespace FFmpegPhotoGenerator
     public class AlgoBodyCascade : IDetect
     {
         //https://drive.google.com/file/d/0B_kNUWF69Zs2N2JpZWkyLXNfSnc/view
-        private static CascadeClassifier _haarClassifier = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["cascadePath"]);
+        private static CascadeClassifier _haarClassifier = new CascadeClassifier(ConfigurationManager.AppSettings["cascadePath"]);
         //detectorBody.detectMultiScale(img, human, 1.04, 4, 0 | 1, Size(30, 80), Size(80,200));
 
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
@@ -108,7 +125,7 @@ namespace FFmpegPhotoGenerator
     public class AlgoBodyCascade2 : IDetect
     {
         //https://drive.google.com/file/d/0B_kNUWF69Zs2N2JpZWkyLXNfSnc/view
-        CascadeClassifier _detectorBody = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["cascadePath"]);
+        CascadeClassifier _detectorBody = new CascadeClassifier(ConfigurationManager.AppSettings["cascadePath"]);
 
         //detectorBody.detectMultiScale(img, human, 1.04, 4, 0 | 1, Size(30, 80), Size(80,200));
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
@@ -121,7 +138,7 @@ namespace FFmpegPhotoGenerator
     public class AlgoCascadeHead : IDetect
     {
         //https://drive.google.com/file/d/0B_kNUWF69Zs2N2JpZWkyLXNfSnc/view
-        private static CascadeClassifier _haarClassifier = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["cascadeHeadPath"]);
+        private static CascadeClassifier _haarClassifier = new CascadeClassifier( ConfigurationManager.AppSettings["cascadeHeadPath"]);
         //detectorHead.detectMultiScale(img, head, 1.1, 4, 0 | 1, Size(40, 40), Size(100, 100));
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
         {
@@ -134,7 +151,7 @@ namespace FFmpegPhotoGenerator
 
     public class AlgoBodyTrainedByMe : IDetect
     {
-        private static CascadeClassifier _haarClassifier = new CascadeClassifier(Application.StartupPath + ConfigurationManager.AppSettings["cascadeTrainedByMe"]);
+        private static CascadeClassifier _haarClassifier = new CascadeClassifier( ConfigurationManager.AppSettings["cascadeTrainedByMe"]);
         public Rectangle[] Detect(Image<Gray, byte> grayframe)
         {
             var targets = _haarClassifier.DetectMultiScale(grayframe, 1.1, 10,

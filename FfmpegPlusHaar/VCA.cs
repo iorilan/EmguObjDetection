@@ -1,39 +1,59 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Emgu.CV;
-using Emgu.CV.Cuda;
-using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
-using Emgu.CV.Util;
+using EmguObjDetect;
+using OpenTK;
 
-namespace FFmpegPhotoGenerator
+namespace VCAOpenCV
 {
     public class VCA
     {
         private static IDetect Algo;
-    
+
         private VCA() { }
-        public static VCA SetAlgo(IDetect algo)
+        public static VCA SelectAlgo(IDetect algo)
         {
             Algo = algo;
             return new VCA();
         }
-        public void Analysis(string path, string outputFolder)
+        public void Analyse()
+        {
+            Task.Run(() =>
+            {
+                var vcaFolder = ConfigurationManager.AppSettings["vcaFolder"];
+                var outputFolder = ConfigurationManager.AppSettings["outputFolder"];
+                MediaHelper.EnsureDirCreated(vcaFolder);
+                while (true)
+                {
+                    var files = Directory.GetFiles(vcaFolder);
+                    if (files.Length > 0)
+                    {
+                        var file = files[0];
+                        Do(file, outputFolder);
+                    }
+                    else
+                    {
+                        Thread.Sleep(1000);
+                    }
+                }
+            });
+           
+        }
+
+        private void Do(string path, string outputFolder)
         {
             bool detected = false;
             using (var fs = new FileStream(path, FileMode.Open))
             {
-                using (var imageFrame = new Image<Bgr, Byte>(new Bitmap(fs)))
+                var bmp = new Bitmap(fs);
+                using (var imageFrame = new Image<Bgr, Byte>(bmp))
                 {
+                   // EmguHelper.ImproveContrast(imageFrame);
                     var grayframe = imageFrame.Convert<Gray, byte>();
                     var targets = Algo.Detect(grayframe);
 
@@ -56,12 +76,6 @@ namespace FFmpegPhotoGenerator
                             // }
                         }
 
-
-                        // imageFrame.DrawPolyline(_points, true, new Bgr(Color.Crimson), 1);
-                        // var bmp = EmguHelper.ResizeImage(imageFrame.ToBitmap(), new Size(pictureBox.Width, pictureBox.Height));
-
-                        //pictureBox.Image = bmp;
-
                         var newBmp = imageFrame.ToBitmap();
                         var oldFileName = MediaHelper.FileName(path);
                         var newFolderName = outputFolder;
@@ -73,6 +87,8 @@ namespace FFmpegPhotoGenerator
                                 newPath = MediaHelper.UniquePath(newPath);
                             }
                             newBmp.Save(newPath);
+
+                            Console.WriteLine("target detected");
                         }
                         catch (Exception ex)
                         {
@@ -87,9 +103,7 @@ namespace FFmpegPhotoGenerator
             TryDelete(path);
         }
 
-       
-
-        private static void TryDelete(string path)
+        private void TryDelete(string path)
         {
             try
             {
